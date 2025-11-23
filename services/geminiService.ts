@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { FileWithData, GeneratedExam, QuestionType, ExamConfig } from "../types";
 
@@ -67,6 +68,12 @@ export const generateExamContent = async (
   const ai = getAIClient(apiKey);
 
   const totalQuestions = config.mcCount + config.tfCount + config.saCount + config.essayCount;
+  const essayPoints = config.essayPoints || 3.0;
+  const objectivePoints = 10 - essayPoints;
+  
+  // Logic for objective point distribution if needed
+  const totalObjQuestions = config.mcCount + config.tfCount + config.saCount;
+  const avgObjPoint = totalObjQuestions > 0 ? (objectivePoints / totalObjQuestions).toFixed(2) : 0;
 
   const promptText = `
     Bạn là chuyên gia soạn đề thi theo CÔNG VĂN 7991/BGDĐT-GDTrH của Bộ GD&ĐT Việt Nam (ban hành 17/12/2024).
@@ -81,19 +88,21 @@ export const generateExamContent = async (
     
     CẤU TRÚC ĐỀ THI BẮT BUỘC (THEO CV 7991):
     
-    PHẦN 1: TRẮC NGHIỆM (70% điểm số - 7.0 điểm)
-    1. Dạng 1: Trắc nghiệm nhiều lựa chọn (YÊU CẦU ĐÚNG ${config.mcCount} câu). 
+    PHẦN 1: TRẮC NGHIỆM (Tổng điểm: ${objectivePoints} điểm)
+    *Yêu cầu tính toán điểm:* Tổng điểm phần này là ${objectivePoints}. Nếu có thể, hãy phân bổ điểm sao cho trung bình mỗi câu trắc nghiệm khoảng ${avgObjPoint} điểm, hoặc tuân theo quy tắc tính điểm chuẩn của CV 7991.
+    
+    1. Dạng 1: Trắc nghiệm nhiều lựa chọn (CHÍNH XÁC ${config.mcCount} câu). 
        - Yêu cầu: Có 4 phương án A, B, C, D. Chỉ 1 đáp án đúng. Nội dung câu hỏi ngắn gọn.
-    2. Dạng 2: Trắc nghiệm đúng/sai (YÊU CẦU ĐÚNG ${config.tfCount} câu).
+    2. Dạng 2: Trắc nghiệm đúng/sai (CHÍNH XÁC ${config.tfCount} câu).
        - Yêu cầu: Mỗi câu có 4 lệnh hỏi nhỏ (a, b, c, d). Mỗi lệnh phải xác định là ĐÚNG hoặc SAI.
        - Nội dung các lệnh phải liên kết với câu dẫn chung.
-    3. Dạng 3: Trắc nghiệm trả lời ngắn (YÊU CẦU ĐÚNG ${config.saCount} câu).
+    3. Dạng 3: Trắc nghiệm trả lời ngắn (CHÍNH XÁC ${config.saCount} câu).
        - Yêu cầu: Học sinh tính toán và điền kết quả (số hoặc cụm từ ngắn). Không có đáp án A,B,C,D.
     
-    PHẦN 2: TỰ LUẬN (30% điểm số - 3.0 điểm) (YÊU CẦU ĐÚNG ${config.essayCount} câu).
+    PHẦN 2: TỰ LUẬN (Tổng điểm: ${essayPoints} điểm) (CHÍNH XÁC ${config.essayCount} câu).
        - Ghi rõ số điểm tương ứng cho mỗi câu hoặc ý nhỏ ngay trong nội dung câu hỏi (Ví dụ: "(1.0 điểm)").
        - Nếu câu hỏi có nhiều ý nhỏ, hãy đánh thứ tự a), b), c)...
-       - Tổng điểm phần này phải là 3.0.
+       - Tổng điểm phần này phải chính xác là ${essayPoints}.
        - Tạo hướng dẫn chấm chi tiết cho phần tự luận để in vào trang đáp án.
 
     QUAN TRỌNG VỀ SỐ LƯỢNG:
@@ -182,6 +191,7 @@ export const generateExamContent = async (
       schoolName: parsed.schoolName || config.schoolName,
       examName: parsed.examName || config.examName,
       examTime: config.examTime,
+      essayPoints: config.essayPoints, // Pass configured essay points
       questions: parsed.questions || [],
       rawText: text,
       matrixHtml: parsed.matrixHtml || "<p>Không có thông tin ma trận</p>"
