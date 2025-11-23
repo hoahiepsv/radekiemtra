@@ -3,12 +3,14 @@ import Header from './components/Header';
 import FileUpload from './components/FileUpload';
 import ConfigForm from './components/ConfigForm';
 import ExamPreview from './components/ExamPreview';
+import ApiKeyConfig from './components/ApiKeyConfig';
 import { analyzeFiles, generateExamContent } from './services/geminiService';
 import { DEFAULT_CONFIG, ICONS, AUTHOR_INFO } from './constants';
 import { FileWithData, ExamConfig, GeneratedExam } from './types';
 
 const App: React.FC = () => {
   // State
+  const [apiKey, setApiKey] = useState<string>('');
   const [files, setFiles] = useState<FileWithData[]>([]);
   const [config, setConfig] = useState<ExamConfig>(DEFAULT_CONFIG);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -16,8 +18,19 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'upload' | 'config' | 'result'>('upload');
 
+  // Load API Key from local storage on mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey) setApiKey(savedKey);
+  }, []);
+
   // Handlers
   const handleFilesSelected = async (newFiles: FileWithData[]) => {
+    if (!apiKey) {
+      setError("Vui lòng nhập Google API Key trước khi xử lý.");
+      return;
+    }
+
     setIsProcessing(true);
     setError(null);
     try {
@@ -26,7 +39,7 @@ const App: React.FC = () => {
       
       // Analyze first batch of files to auto-fill school/exam name
       if (allFiles.length > 0 && step === 'upload') {
-        const info = await analyzeFiles(newFiles); // Analyze newly added files
+        const info = await analyzeFiles(newFiles, apiKey);
         setConfig(prev => ({
           ...prev,
           schoolName: info.schoolName || prev.schoolName,
@@ -35,25 +48,30 @@ const App: React.FC = () => {
         setStep('config');
       }
     } catch (err) {
-      setError("Có lỗi khi đọc file. Vui lòng thử lại.");
+      setError("Có lỗi khi đọc file hoặc phân tích. Kiểm tra lại API Key.");
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleGenerate = async () => {
+    if (!apiKey) {
+      setError("Vui lòng nhập Google API Key.");
+      return;
+    }
     if (files.length === 0) {
       setError("Vui lòng tải lên ít nhất một file PDF.");
       return;
     }
+
     setIsProcessing(true);
     setError(null);
     try {
-      const result = await generateExamContent(files, config);
+      const result = await generateExamContent(files, config, apiKey);
       setGeneratedExam(result);
       setStep('result');
     } catch (err) {
-      setError("Không thể tạo đề thi. Vui lòng kiểm tra lại API Key hoặc file đầu vào.");
+      setError("Không thể tạo đề thi. Vui lòng kiểm tra lại file đầu vào hoặc API Key.");
       console.error(err);
     } finally {
       setIsProcessing(false);
@@ -93,6 +111,9 @@ const App: React.FC = () => {
           {/* Left Column: Controls */}
           <div className="lg:col-span-4 space-y-6">
             
+            {/* API Key Config */}
+            <ApiKeyConfig apiKey={apiKey} onApiKeyChange={setApiKey} />
+
             {/* File Upload Section */}
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
               <h3 className="text-lg font-bold text-primary mb-4 flex items-center">
@@ -169,7 +190,7 @@ const App: React.FC = () => {
                         <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
                     </svg>
                  </div>
-                 <p className="text-lg">Vui lòng tải lên tài liệu và nhấn "Tạo Đề Kiểm Tra"</p>
+                 <p className="text-lg">Vui lòng tải tài liệu và nhấn "Tạo Đề Kiểm Tra"</p>
               </div>
             )}
           </div>

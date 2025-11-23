@@ -1,3 +1,4 @@
+
 export enum QuestionType {
   MULTIPLE_CHOICE = 'Trắc nghiệm nhiều lựa chọn', // Type 1
   TRUE_FALSE = 'Trắc nghiệm đúng sai',            // Type 2
@@ -43,6 +44,7 @@ export interface GeneratedExam {
   examTime?: number;
   questions: Question[];
   rawText: string;
+  matrixHtml?: string;
 }
 
 export interface FileWithData {
