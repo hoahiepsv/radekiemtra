@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ExamConfig } from '../types';
 
@@ -12,6 +13,12 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
   const handleChange = (key: keyof ExamConfig, value: any) => {
     onChange({ ...config, [key]: value });
   };
+
+  // Calculations for Point Distribution
+  const essayPoints = config.essayPoints || 0;
+  const objectivePoints = 10 - essayPoints;
+  const totalObjQuestions = (config.mcCount || 0) + (config.tfCount || 0) + (config.saCount || 0);
+  const avgObjPoint = totalObjQuestions > 0 ? (objectivePoints / totalObjQuestions).toFixed(2) : '0';
 
   return (
     <div className="space-y-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -80,9 +87,12 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
            </select>
         </div>
 
-        <div className="md:col-span-2 border-t pt-3 mt-1">
-           <p className="text-sm font-bold text-blue-700 uppercase mb-2">Phần I: Trắc nghiệm (70%)</p>
-           <p className="text-xs text-gray-500 mb-2">Tổng điểm: 7.0</p>
+        <div className="md:col-span-2 border-t pt-3 mt-1 flex justify-between items-baseline">
+           <div>
+              <p className="text-sm font-bold text-blue-700 uppercase mb-1">Phần I: Trắc nghiệm</p>
+              <p className="text-xs text-gray-500">Tổng điểm: <span className="font-bold text-red-600">{objectivePoints.toFixed(1)}</span> điểm</p>
+              <p className="text-xs text-gray-500">TB mỗi câu: ~{avgObjPoint} điểm</p>
+           </div>
         </div>
 
         {/* Question Counts Part 1 */}
@@ -129,13 +139,15 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
             />
         </div>
 
-        <div className="md:col-span-2 border-t pt-3 mt-1">
-           <p className="text-sm font-bold text-blue-700 uppercase mb-2">Phần II: Tự luận (30%)</p>
-           <p className="text-xs text-gray-500 mb-2">Tổng điểm: 3.0</p>
+        <div className="md:col-span-2 border-t pt-3 mt-1 flex justify-between items-baseline">
+           <div>
+              <p className="text-sm font-bold text-blue-700 uppercase mb-1">Phần II: Tự luận</p>
+              <p className="text-xs text-gray-500">Tổng điểm: <span className="font-bold text-red-600">{essayPoints.toFixed(1)}</span> điểm</p>
+           </div>
         </div>
 
         {/* Question Counts Part 2 */}
-        <div className="md:col-span-2">
+        <div>
             <label className="block text-sm font-medium text-gray-700">
                 Số lượng câu Tự luận (0-10 câu)
             </label>
@@ -145,6 +157,26 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
                 max="10" 
                 value={config.essayCount}
                 onChange={(e) => handleChange('essayCount', parseInt(e.target.value) || 0)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                disabled={disabled}
+            />
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-700">
+                Điểm Tự luận (0 - 10 điểm)
+            </label>
+            <input 
+                type="number" 
+                min="0" 
+                max="10"
+                step="0.5"
+                value={config.essayPoints}
+                onChange={(e) => {
+                    let val = parseFloat(e.target.value);
+                    if (val > 10) val = 10;
+                    if (val < 0) val = 0;
+                    handleChange('essayPoints', val);
+                }}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                 disabled={disabled}
             />

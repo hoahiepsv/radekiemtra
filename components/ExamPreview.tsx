@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { GeneratedExam, QuestionType } from '../types';
 import { AUTHOR_INFO, ICONS } from '../constants';
@@ -27,6 +28,14 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
     const part1_type3 = exam.questions.filter(q => q.type === QuestionType.SHORT_ANSWER);
     const part2 = exam.questions.filter(q => q.type === QuestionType.ESSAY);
 
+    // Calculate Points for Display
+    const essayPointsVal = exam.essayPoints !== undefined ? exam.essayPoints : 3.0;
+    const objectivePointsVal = 10 - essayPointsVal;
+    
+    // Format to Vietnamese string (e.g. 3.0 -> 3,0)
+    const essayPointsStr = essayPointsVal.toFixed(1).replace('.', ',');
+    const objectivePointsStr = objectivePointsVal.toFixed(1).replace('.', ',');
+
     let htmlBody = '';
 
     // HEADER - MODIFIED TEACHER STANDARD LAYOUT
@@ -53,9 +62,9 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
       </div>
     `;
 
-    // PART 1: TRẮC NGHIỆM (7.0 điểm)
+    // PART 1: TRẮC NGHIỆM
     if (part1_type1.length > 0 || part1_type2.length > 0 || part1_type3.length > 0) {
-        htmlBody += `<div class='part-title'><b>PHẦN I. TRẮC NGHIỆM (7,0 điểm)</b></div>`;
+        htmlBody += `<div class='part-title'><b>PHẦN I. TRẮC NGHIỆM (${objectivePointsStr} điểm)</b></div>`;
         
         // Type 1: Multiple Choice
         if (part1_type1.length > 0) {
@@ -111,9 +120,9 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
         }
     }
 
-    // PART 2: TỰ LUẬN (3.0 điểm)
+    // PART 2: TỰ LUẬN
     if (part2.length > 0) {
-        htmlBody += `<div class='part-title' style='margin-top:20px;'><b>PHẦN II. TỰ LUẬN (3,0 điểm)</b></div>`;
+        htmlBody += `<div class='part-title' style='margin-top:20px;'><b>PHẦN II. TỰ LUẬN (${essayPointsStr} điểm)</b></div>`;
         part2.forEach((q, index) => {
             // Định dạng câu a, b, c xuống dòng cho tự luận
             let essayContent = cleanContent(q.content);
