@@ -15,6 +15,11 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
     }
   }, [exam]);
 
+  // Helper to remove "Câu X" prefix if AI included it in the content
+  const cleanContent = (content: string) => {
+    return content.replace(/^Câu\s+\d+[:.]?\s*/i, '');
+  };
+
   const handleDownloadWord = () => {
     // Group questions by type for structure following CV 7991
     const part1_type1 = exam.questions.filter(q => q.type === QuestionType.MULTIPLE_CHOICE);
@@ -24,28 +29,27 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
 
     let htmlBody = '';
 
-    // HEADER - TEACHER STANDARD LAYOUT
+    // HEADER - MODIFIED TEACHER STANDARD LAYOUT
+    // Left: Department and School
+    // Right: Exam Name and Time
     htmlBody += `
-      <table style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 10px;">
+      <table style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 20px;">
           <tr>
             <td style="text-align: center; vertical-align: top; width: 40%;">
-              <p style="font-weight: bold; margin: 0; font-size: 11pt;">${(exam.schoolName || 'TRƯỜNG THPT...').toUpperCase()}</p>
+              <p style="font-size: 13pt; margin: 0; text-transform: uppercase;">SỞ GD&ĐT ........................</p>
+              <p style="font-weight: bold; margin: 0; font-size: 13pt; text-transform: uppercase;">${(exam.schoolName || 'TRƯỜNG THPT...').toUpperCase()}</p>
               <p style="margin: 0;">----------------</p>
             </td>
             <td style="text-align: center; vertical-align: top; width: 60%;">
-              <p style="font-weight: bold; margin: 0; font-size: 11pt;">${(exam.examName || 'ĐỀ KIỂM TRA').toUpperCase()}</p>
-              <p style="margin: 0; font-size: 10pt; font-style: italic;">(Đề thi có ... trang)</p>
+              <p style="font-weight: bold; margin: 0; font-size: 13pt; text-transform: uppercase;">${(exam.examName || 'ĐỀ KIỂM TRA')}</p>
+              <p style="margin: 5px 0 0 0; font-style: italic; font-size: 13pt;">Thời gian làm bài: ${exam.examTime || 45} phút</p>
+              <p style="margin: 0; font-size: 13pt; font-style: italic;">(không kể thời gian phát đề)</p>
             </td>
           </tr>
       </table>
-      
-      <div style="text-align: center; margin-top: 15px; margin-bottom: 10px;">
-          <p style="font-weight: bold; font-size: 14pt; margin: 0;">ĐỀ KIỂM TRA THEO CÔNG VĂN 7991</p>
-          <p style="font-style: italic; margin: 5px 0;">Thời gian làm bài: ${exam.examTime || 45} phút (không kể thời gian phát đề)</p>
-      </div>
 
-      <div style="margin: 15px 0; border: 1px solid black; padding: 10px;">
-          <p style="margin: 0; font-weight: bold;">Họ và tên học sinh: ............................................................................ Lớp: ....................</p>
+      <div style="margin: 10px 0; border: 1px solid black; padding: 5px 10px;">
+          <p style="margin: 0; font-weight: bold; font-size: 13pt;">Họ và tên học sinh: ............................................................................ Lớp: ....................</p>
       </div>
     `;
 
@@ -56,15 +60,15 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
         // Type 1: Multiple Choice
         if (part1_type1.length > 0) {
              part1_type1.forEach((q, index) => {
-                htmlBody += `<div class='question'><b>Câu ${index + 1}:</b> ${q.content}`;
+                htmlBody += `<div class='question' style='margin-bottom: 5px;'><b>Câu ${index + 1}:</b> ${cleanContent(q.content)}</div>`;
                 if (q.options) {
-                    htmlBody += `<div class='options'><table width="100%"><tr>`;
+                    // Trình bày kiểu table cho các lựa chọn trắc nghiệm như yêu cầu giáo viên
+                    htmlBody += `<table style="width: 100%; margin-bottom: 10px; border: none;"><tr>`;
                     q.options.forEach(opt => {
-                        htmlBody += `<td width="25%">${opt}</td>`;
+                        htmlBody += `<td style="width: 25%; vertical-align: top;">${opt}</td>`;
                     });
-                    htmlBody += `</tr></table></div>`;
+                    htmlBody += `</tr></table>`;
                 }
-                htmlBody += `</div>`;
              });
         }
 
@@ -73,7 +77,7 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
             htmlBody += `<div class='section-title'><b>Trắc nghiệm đúng sai</b></div>`;
             part1_type2.forEach((q, index) => {
                 const qNum = part1_type1.length + index + 1;
-                htmlBody += `<div class='question'><b>Câu ${qNum}:</b> ${q.content}`;
+                htmlBody += `<div class='question'><b>Câu ${qNum}:</b> ${cleanContent(q.content)}`;
                 if (q.subQuestions) {
                     htmlBody += `<table class='tf-table' border="1" cellspacing="0" cellpadding="5">
                         <tr>
@@ -101,7 +105,7 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
             htmlBody += `<div class='section-title'><b>Trắc nghiệm trả lời ngắn</b></div>`;
             part1_type3.forEach((q, index) => {
                 const qNum = part1_type1.length + part1_type2.length + index + 1;
-                htmlBody += `<div class='question'><b>Câu ${qNum}:</b> ${q.content}<br/>
+                htmlBody += `<div class='question'><b>Câu ${qNum}:</b> ${cleanContent(q.content)}<br/>
                 <div style="margin-top:5px; border:1px solid #ccc; padding:5px;">Đáp số: ..............................</div></div>`;
             });
         }
@@ -111,7 +115,13 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
     if (part2.length > 0) {
         htmlBody += `<div class='part-title' style='margin-top:20px;'><b>PHẦN II. TỰ LUẬN (3,0 điểm)</b></div>`;
         part2.forEach((q, index) => {
-            htmlBody += `<div class='question'><b>Câu ${index + 1}:</b> ${q.content}</div>`;
+            // Định dạng câu a, b, c xuống dòng cho tự luận
+            let essayContent = cleanContent(q.content);
+            // Thay thế các mẫu như "a)" thành "<br/>a)" để xuống dòng
+            essayContent = essayContent.replace(/([a-d]\))/g, '<br/>$1');
+            
+            // Canh lề trái cho tự luận
+            htmlBody += `<div class='essay-question'><b>Câu ${index + 1}:</b> ${essayContent}</div>`;
         });
     }
 
@@ -175,11 +185,23 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
               htmlBody += `
                 <tr>
                     <td align="center" valign="top"><b>Câu ${i+1}</b></td>
-                    <td valign="top">${solutionText}</td>
+                    <td valign="top" style="text-align: left;">${solutionText}</td>
                 </tr>
               `;
          });
          htmlBody += `</table>`;
+    }
+
+    // --- MATRIX PAGE ---
+    if (exam.matrixHtml) {
+        htmlBody += `
+            <br clear=all style='mso-special-character:line-break;page-break-before:always'>
+            <div class="answer-title">MA TRẬN / ĐẶC TẢ ĐỀ THI</div>
+            <div style="margin-top: 20px;">
+                ${exam.matrixHtml}
+            </div>
+            <p style="margin-top:20px; font-style: italic;">Ma trận được xây dựng dựa trên cấu trúc đề thi đã tạo.</p>
+        `;
     }
 
     const content = `
@@ -188,16 +210,18 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
         <meta charset="utf-8">
         <title>${exam.examName}</title>
         <style>
-          body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.3; }
+          body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; }
+          p, div, table, td, th, span { font-family: 'Times New Roman', serif; font-size: 13pt; }
           .part-title { font-weight: bold; margin-top: 15px; margin-bottom: 10px; font-size: 13pt; }
           .section-title { font-weight: bold; margin-top: 10px; font-style: italic; margin-left: 10px; }
           .question { margin-bottom: 10px; text-align: justify; }
-          .options { margin-left: 20px; }
+          .essay-question { margin-bottom: 10px; text-align: left; }
           .tf-table { width: 100%; border: 1px solid black; margin-top: 5px; border-collapse: collapse; }
-          .footer { margin-top: 30px; font-size: 10pt; font-style: italic; text-align: right; }
+          .footer { margin-top: 30px; font-size: 11pt; font-style: italic; text-align: right; }
           .answer-title { text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 20px; text-transform: uppercase; }
           .answer-table { width: 100%; border-collapse: collapse; }
           .essay-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          table td, table th { padding: 5px; }
         </style>
       </head>
       <body>${htmlBody}</body></html>
@@ -245,6 +269,7 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
             {exam.questions.map((q, idx) => {
                 // Note: In real app, calculate offset based on section
                 let displayNum = idx + 1; 
+                const displayContent = cleanContent(q.content);
                 
                 return (
                     <div key={idx} className="p-4 bg-slate-50 rounded border border-slate-100 shadow-sm">
@@ -252,7 +277,7 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
                             <span className="font-bold text-primary mr-1">
                                 {q.type === QuestionType.ESSAY ? 'Câu TL' : 'Câu'} {displayNum}:
                             </span> 
-                            <span dangerouslySetInnerHTML={{ __html: q.content }}></span>
+                            <span dangerouslySetInnerHTML={{ __html: displayContent }}></span>
                             <span className="text-[10px] text-white bg-blue-400 ml-2 px-2 py-0.5 rounded-full uppercase">{q.type}</span>
                         </div>
                         
@@ -313,6 +338,14 @@ const ExamPreview: React.FC<ExamPreviewProps> = ({ exam }) => {
                 );
             })}
         </div>
+        
+        {/* Matrix Preview */}
+        {exam.matrixHtml && (
+             <div className="mt-8 pt-6 border-t border-gray-200">
+                <h3 className="font-bold text-gray-700 mb-2 uppercase text-sm">Ma trận đề thi</h3>
+                <div className="prose prose-sm max-w-none p-4 bg-gray-50 border rounded" dangerouslySetInnerHTML={{__html: exam.matrixHtml}}></div>
+             </div>
+        )}
 
         {/* Footer Info */}
         <div className="mt-8 pt-4 border-t text-xs text-gray-400 italic text-right">
