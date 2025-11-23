@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ExamConfig } from './types';
 
@@ -6,10 +7,11 @@ export const DEFAULT_CONFIG: ExamConfig = {
   examName: '',
   examTime: 45,
   difficulty: 'Trung bình',
-  mcCount: 12,   // Default usually 12 for 0.25pt each (3pts)
-  tfCount: 4,    // Default usually 4 for 1pt each (4 pts -> scaled to 2?) Depends on matrix, setting reasonable default
+  mcCount: 12,   // Default usually 12
+  tfCount: 4,    // Default usually 4
   saCount: 6,    // Default usually 6
-  essayCount: 2, // Essay
+  essayCount: 2, // Essay count
+  essayPoints: 3.0, // Default Essay Points (30%)
   matrixNotes: 'Tỷ lệ nhận biết 40%, thông hiểu 30%, vận dụng 30%. Công thức toán in ấn chuẩn.'
 };
 

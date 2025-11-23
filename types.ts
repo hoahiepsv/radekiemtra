@@ -34,7 +34,10 @@ export interface ExamConfig {
   mcCount: number;        // Part 1 - Type 1
   tfCount: number;        // Part 1 - Type 2
   saCount: number;        // Part 1 - Type 3
-  essayCount: number;     // Part 2
+  
+  essayCount: number;     // Part 2 - Count
+  essayPoints: number;    // Part 2 - Points (New field)
+
   matrixNotes: string;
 }
 
@@ -42,6 +45,7 @@ export interface GeneratedExam {
   schoolName: string;
   examName: string;
   examTime?: number;
+  essayPoints?: number; // Added field for dynamic point rendering
   questions: Question[];
   rawText: string;
   matrixHtml?: string;
