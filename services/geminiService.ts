@@ -1,203 +1,113 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
-import { FileWithData, GeneratedExam, QuestionType, ExamConfig } from "../types";
+import { GoogleGenAI } from "@google/genai";
+import { GeminiModel } from '../types';
+import { fileToBase64 } from '../utils/fileHelpers';
 
-const AI_MODEL_FLASH = "gemini-2.5-flash";
-
-const getAIClient = (apiKey: string) => {
-  return new GoogleGenAI({ apiKey: apiKey });
-};
-
-export const analyzeFiles = async (files: FileWithData[], apiKey: string): Promise<{ schoolName: string; examName: string }> => {
-  const ai = getAIClient(apiKey);
+export const analyzeImage = async (apiKey: string, file: File): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const base64Data = await fileToBase64(file);
   
-  const promptText = `
-    Bạn là một trợ lý giáo viên thông minh. 
-    Hãy phân tích các tài liệu đính kèm (ma trận đề thi hoặc ngân hàng câu hỏi).
-    Nhiệm vụ:
-    1. Tìm tên Trường (hoặc Sở GD&ĐT).
-    2. Tìm tên Kỳ thi (ví dụ: Kiểm tra giữa học kỳ 1, Khảo sát chất lượng, v.v.).
-    
-    Trả về kết quả dưới dạng JSON chính xác với cấu trúc:
-    {
-      "schoolName": "Tên trường tìm thấy",
-      "examName": "Tên kỳ thi tìm thấy"
-    }
-    Nếu không tìm thấy, hãy để trống.
+  const prompt = `
+  Bạn là một hệ thống OCR và chuyển đổi nội dung số chính xác tuyệt đối. Nhiệm vụ của bạn là trích xuất nội dung từ hình ảnh/PDF thành văn bản Markdown.
+
+  QUY TẮC QUAN TRỌNG VỀ ĐỊNH DẠNG (BẮT BUỘC TUÂN THỦ):
+  1. **PHÂN BIỆT LATEX VÀ VĂN BẢN:**
+     - **KHÔNG** dùng định dạng LaTeX ($...$) cho văn bản tiếng Việt, chữ cái thông thường, số bài (Bài 1, Câu 1), hoặc các ký tự không phải toán học.
+     - **CHỈ** dùng LaTeX cho: phương trình, biểu thức toán học, biến số (x, y, z), phân số, căn bậc, tích phân, ký hiệu hình học.
+     - Ví dụ SAI: $Cho$ $tam$ $giác$ $ABC$.
+     - Ví dụ ĐÚNG: Cho tam giác $ABC$ có cạnh $AB = 3cm$.
+
+  2. **KHÔNG** viết bất kỳ lời dẫn nhập nào (Ví dụ: "Dưới đây là nội dung...", "Kết quả số hoá...", "File này chứa...").
+  3. **KHÔNG** viết lời kết thúc hay nhận xét.
+  4. **CHỈ** xuất ra nội dung đề thi/bài tập trích xuất được. Bắt đầu ngay vào nội dung.
+
+  Yêu cầu chi tiết nội dung:
+  1. **Văn bản:** Trích xuất lại nguyên văn từng chữ, ký hiệu. Giữ nguyên định dạng câu hỏi.
+  2. **Toán học:** Viết chuẩn LaTeX. 
+     - Dòng: $...$
+     - Riêng dòng: $$...$$
+  3. **Hình vẽ:** 
+     - Nếu có hình vẽ minh hoạ (hình học, đồ thị...), hãy MÔ TẢ LẠI bằng mã **TikZ**.
+     - Đặt mã TikZ **NGAY SAU** nội dung câu hỏi/bài tập liên quan.
+     - Đặt mã trong block: \`\`\`tikz ... \`\`\`.
+     - **QUAN TRỌNG:** Nếu là hình học phẳng (tam giác, đường tròn, tiếp tuyến...), **BẮT BUỘC** sử dụng thư viện \`tkz-euclide\` để vẽ. Đây là tiêu chuẩn giáo khoa Việt Nam. 
+     - Mã TikZ phải đầy đủ, vẽ chính xác tỉ lệ, toạ độ, nhãn điểm (A, B, C...) như hình gốc.
+
+  Hãy bắt đầu ngay lập tức vào nội dung chính.
   `;
 
-  const parts: any[] = files.map(f => ({
-    inlineData: {
-      mimeType: f.mimeType,
-      data: f.base64
-    }
-  }));
-
-  parts.push({ text: promptText });
-
   try {
+    const modelId = GeminiModel.PRO; 
+    
     const response = await ai.models.generateContent({
-      model: AI_MODEL_FLASH,
-      contents: { parts },
+      model: modelId,
+      contents: {
+        parts: [
+            { text: prompt },
+            {
+                inlineData: {
+                    mimeType: file.type,
+                    data: base64Data
+                }
+            }
+        ]
+      },
       config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            schoolName: { type: Type.STRING },
-            examName: { type: Type.STRING }
-          }
-        }
+        thinkingConfig: { thinkingBudget: 2048 }
       }
     });
 
-    const text = response.text;
-    if (!text) return { schoolName: '', examName: '' };
-    return JSON.parse(text);
+    return response.text || "";
   } catch (error) {
-    console.error("Lỗi phân tích file:", error);
-    return { schoolName: '', examName: '' };
+    console.error("Gemini API Error:", error);
+    throw error;
   }
 };
 
-export const generateExamContent = async (
-  files: FileWithData[],
-  config: ExamConfig,
-  apiKey: string
-): Promise<GeneratedExam> => {
-  const ai = getAIClient(apiKey);
+export const refineTikzCode = async (apiKey: string, file: File, currentCode: string): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const base64Data = await fileToBase64(file);
 
-  const totalQuestions = config.mcCount + config.tfCount + config.saCount + config.essayCount;
-  const essayPoints = config.essayPoints || 3.0;
-  const objectivePoints = 10 - essayPoints;
+  const prompt = `
+  Tôi có một đoạn mã TikZ được tạo ra từ hình ảnh này, nhưng nó chưa chính xác hoặc chưa đẹp.
   
-  // Logic for objective point distribution if needed
-  const totalObjQuestions = config.mcCount + config.tfCount + config.saCount;
-  const avgObjPoint = totalObjQuestions > 0 ? (objectivePoints / totalObjQuestions).toFixed(2) : 0;
+  Mã hiện tại:
+  \`\`\`latex
+  ${currentCode}
+  \`\`\`
 
-  const promptText = `
-    Bạn là chuyên gia soạn đề thi theo CÔNG VĂN 7991/BGDĐT-GDTrH của Bộ GD&ĐT Việt Nam (ban hành 17/12/2024).
-    Nhiệm vụ: Tạo đề kiểm tra bám sát Chương trình GDPT 2018 và tạo MA TRẬN đề thi tương ứng.
-
-    THÔNG TIN ĐỀ BÀI:
-    - Trường: ${config.schoolName}
-    - Kỳ thi: ${config.examName}
-    - Độ khó: ${config.difficulty}
-    - Thời gian làm bài: ${config.examTime} phút
-    - Ghi chú/Ma trận yêu cầu: ${config.matrixNotes}
-    
-    CẤU TRÚC ĐỀ THI BẮT BUỘC (THEO CV 7991):
-    
-    PHẦN 1: TRẮC NGHIỆM (Tổng điểm: ${objectivePoints} điểm)
-    *Yêu cầu tính toán điểm:* Tổng điểm phần này là ${objectivePoints}. Nếu có thể, hãy phân bổ điểm sao cho trung bình mỗi câu trắc nghiệm khoảng ${avgObjPoint} điểm, hoặc tuân theo quy tắc tính điểm chuẩn của CV 7991.
-    
-    1. Dạng 1: Trắc nghiệm nhiều lựa chọn (CHÍNH XÁC ${config.mcCount} câu). 
-       - Yêu cầu: Có 4 phương án A, B, C, D. Chỉ 1 đáp án đúng. Nội dung câu hỏi ngắn gọn.
-    2. Dạng 2: Trắc nghiệm đúng/sai (CHÍNH XÁC ${config.tfCount} câu).
-       - Yêu cầu: Mỗi câu có 4 lệnh hỏi nhỏ (a, b, c, d). Mỗi lệnh phải xác định là ĐÚNG hoặc SAI.
-       - Nội dung các lệnh phải liên kết với câu dẫn chung.
-    3. Dạng 3: Trắc nghiệm trả lời ngắn (CHÍNH XÁC ${config.saCount} câu).
-       - Yêu cầu: Học sinh tính toán và điền kết quả (số hoặc cụm từ ngắn). Không có đáp án A,B,C,D.
-    
-    PHẦN 2: TỰ LUẬN (Tổng điểm: ${essayPoints} điểm) (CHÍNH XÁC ${config.essayCount} câu).
-       - Ghi rõ số điểm tương ứng cho mỗi câu hoặc ý nhỏ ngay trong nội dung câu hỏi (Ví dụ: "(1.0 điểm)").
-       - Nếu câu hỏi có nhiều ý nhỏ, hãy đánh thứ tự a), b), c)...
-       - Tổng điểm phần này phải chính xác là ${essayPoints}.
-       - Tạo hướng dẫn chấm chi tiết cho phần tự luận để in vào trang đáp án.
-
-    QUAN TRỌNG VỀ SỐ LƯỢNG:
-    - Tổng số câu hỏi trong mảng "questions" PHẢI LÀ ${totalQuestions} CÂU.
-    - TUYỆT ĐỐI KHÔNG ĐƯỢC sinh thiếu câu hỏi. Nếu thiếu thông tin, hãy tự sinh câu hỏi phù hợp với chủ đề để đủ số lượng.
-
-    YÊU CẦU KỸ THUẬT (TUÂN THỦ TUYỆT ĐỐI):
-    1. **LaTeX**: Công thức Toán/Lý/Hóa đặt trong dấu $. Ví dụ: $x^2 - 2x + 1 = 0$.
-    2. **Hình học**: BẮT BUỘC dùng lệnh \`\\widehat{ABC}\` cho ký hiệu góc. TUYỆT ĐỐI KHÔNG dùng \`\\angle\`. Đây là chuẩn để in ấn OMML cho giáo viên.
-    3. **Phân hóa**: Đảm bảo tỷ lệ mức độ nhận thức: 40% Nhận biết - 30% Thông hiểu - 30% Vận dụng.
-    4. **Ma trận**: Hãy tạo một bảng HTML tóm tắt ma trận đề thi này (Chủ đề, Mức độ nhận thức, Số câu, Điểm số) để in vào cuối tài liệu.
-
-    OUTPUT JSON FORMAT:
-    {
-      "schoolName": "...",
-      "examName": "...",
-      "questions": [
-        // Dạng 1 (${config.mcCount} câu)
-        {
-          "id": "1",
-          "type": "Trắc nghiệm nhiều lựa chọn",
-          "content": "Nội dung câu hỏi...",
-          "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
-          "correctAnswer": "A",
-          "solution": "Giải thích ngắn gọn..."
-        },
-        ...
-        // Dạng 2 (${config.tfCount} câu)
-        {
-          "id": "...",
-          "type": "Trắc nghiệm đúng sai",
-          "content": "Câu dẫn chung cho 4 ý...",
-          "subQuestions": [
-             { "id": "a", "content": "Nội dung ý a", "answer": true },
-             { "id": "b", "content": "Nội dung ý b", "answer": false },
-             { "id": "c", "content": "Nội dung ý c", "answer": false },
-             { "id": "d", "content": "Nội dung ý d", "answer": true }
-          ],
-          "solution": "Giải thích chi tiết..."
-        },
-        ...
-        // Dạng 3 (${config.saCount} câu)
-        {
-          "id": "...",
-          "type": "Trắc nghiệm trả lời ngắn",
-          "content": "Nội dung câu hỏi...",
-          "correctAnswer": "15 cm",
-          "solution": "Cách tính ra kết quả..."
-        },
-        ...
-        // Tự luận (${config.essayCount} câu)
-        {
-          "id": "...",
-          "type": "Tự luận",
-          "content": "Câu 1 (1.0 điểm): Nội dung câu hỏi... a) ... b) ...",
-          "solution": "Hướng dẫn chấm chi tiết: \n- Ý a (0.5đ): ... \n- Ý b (0.5đ): ..."
-        }
-      ],
-      "matrixHtml": "<table border='1' cellpadding='5' cellspacing='0' style='width:100%; border-collapse: collapse;'><tr><th>Nội dung</th><th>Nhận biết</th><th>Thông hiểu</th><th>Vận dụng</th><th>Tổng điểm</th></tr><tr><td>...</td>...</tr></table>"
-    }
+  NHIỆM VỤ CỦA BẠN:
+  1. Quan sát thật kỹ hình ảnh gốc.
+  2. Sửa lại mã TikZ trên sao cho hình vẽ GIỐNG HỆT hình ảnh gốc (về tỉ lệ, vị trí điểm, các ký hiệu vuông góc/bằng nhau, nhãn, kiểu đường nét liền/đứt).
+  3. **BẮT BUỘC**: Sử dụng thư viện \`tkz-euclide\` nếu là hình học phẳng để hình vẽ đẹp và chuẩn.
+  4. CHỈ TRẢ VỀ mã nguồn TikZ đã sửa, nằm trong block code \`\`\`tikz ... \`\`\`. Không giải thích gì thêm.
   `;
-
-  const parts: any[] = files.map(f => ({
-    inlineData: {
-      mimeType: f.mimeType,
-      data: f.base64
-    }
-  }));
-  
-  parts.push({ text: promptText });
 
   try {
     const response = await ai.models.generateContent({
-      model: AI_MODEL_FLASH,
-      contents: { parts: parts },
+      model: GeminiModel.PRO,
+      contents: {
+        parts: [
+            { text: prompt },
+            {
+                inlineData: {
+                    mimeType: file.type,
+                    data: base64Data
+                }
+            }
+        ]
+      },
       config: {
-        responseMimeType: "application/json",
+        thinkingConfig: { thinkingBudget: 2048 }
       }
     });
-
-    const text = response.text;
-    if (!text) throw new Error("Không nhận được phản hồi từ AI");
     
-    const parsed = JSON.parse(text);
-    return {
-      schoolName: parsed.schoolName || config.schoolName,
-      examName: parsed.examName || config.examName,
-      examTime: config.examTime,
-      essayPoints: config.essayPoints, // Pass configured essay points
-      questions: parsed.questions || [],
-      rawText: text,
-      matrixHtml: parsed.matrixHtml || "<p>Không có thông tin ma trận</p>"
-    };
+    // Extract code block
+    const text = response.text || "";
+    const match = text.match(/```(?:tikz|latex)?([\s\S]*?)```/);
+    return match ? match[1].trim() : text.trim();
   } catch (error) {
-    console.error("Lỗi tạo đề:", error);
+    console.error("Refine TikZ Error:", error);
     throw error;
   }
 };
