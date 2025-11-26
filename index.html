@@ -3,54 +3,80 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LHH - ỨNG DỤNG RA ĐỀ KIỂM TRA THEO CÔNG VĂN 7991</title>
+    <title>TỔNG HỢP ĐỀ TỪ HÌNH ẢNH</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: '#1e40af', // Blue-800
-              secondary: '#3b82f6', // Blue-500
-              accent: '#eff6ff', // Blue-50
-            }
-          }
-        }
-      }
-    </script>
-    <!-- MathJax for rendering LaTeX in the browser preview -->
-    <script>
-      window.MathJax = {
-        tex: {
-          inlineMath: [['$', '$'], ['\\(', '\\)']]
-        },
-        svg: {
-          fontCache: 'global'
-        }
-      };
-    </script>
-    <script type="text/javascript" id="MathJax-script" async
-      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
-    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-      body {
-        font-family: 'Roboto', sans-serif;
+      body { font-family: 'Inter', sans-serif; }
+      /* Custom scrollbar for better aesthetics */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
+
+      /* PRINT STYLES FOR PDF EXPORT */
+      @media print {
+        @page {
+          size: A4;
+          margin: 20mm;
+        }
+        body {
+          background: white;
+          color: black;
+        }
+        /* Hide everything by default */
+        body > * {
+          display: none !important;
+        }
+        /* Only show the print area */
+        #print-area {
+          display: block !important;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          background: white;
+          font-size: 12pt;
+          line-height: 1.5;
+        }
+        #print-area * {
+          visibility: visible;
+        }
+        /* Hide buttons inside print area if any accidentally exist */
+        #print-area button {
+          display: none !important;
+        }
       }
     </style>
   <script type="importmap">
 {
   "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "rehype-katex": "https://aistudiocdn.com/rehype-katex@^7.0.1",
+    "remark-math": "https://aistudiocdn.com/remark-math@^6.0.0",
+    "docx": "https://aistudiocdn.com/docx@^9.5.1"
   }
 }
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-slate-50 text-slate-900">
+  <body>
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

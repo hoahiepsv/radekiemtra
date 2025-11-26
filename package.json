@@ -1,5 +1,5 @@
 {
-  "name": "ứng-dụng-ra-đề-kiểm-tra-theo-công-văn-7991",
+  "name": "tổng-hợp-đề-từ-hình-ảnh",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,9 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.0",
+    "@google/genai": "^1.30.0",
     "react-dom": "^19.2.0",
-    "@google/genai": "^1.30.0"
+    "react": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "lucide-react": "^0.554.0",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "docx": "^9.5.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

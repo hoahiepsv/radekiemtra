@@ -1,58 +1,16 @@
-
-export enum QuestionType {
-  MULTIPLE_CHOICE = 'Trắc nghiệm nhiều lựa chọn', // Type 1
-  TRUE_FALSE = 'Trắc nghiệm đúng sai',            // Type 2
-  SHORT_ANSWER = 'Trắc nghiệm trả lời ngắn',      // Type 3
-  ESSAY = 'Tự luận'                               // Part 2
-}
-
-export interface SubQuestion {
-  id: string; // a, b, c, d
-  content: string;
-  answer: boolean; // true = Đúng, false = Sai
-}
-
-export interface Question {
+export interface ProcessedFile {
   id: string;
-  type: QuestionType;
-  content: string;
-  // For Type 1 (MC)
-  options?: string[]; 
-  correctAnswer?: string; 
-  // For Type 2 (True/False)
-  subQuestions?: SubQuestion[];
-  // For Type 3 & Essay
-  solution?: string; 
+  originalFile: File;
+  status: 'idle' | 'processing' | 'success' | 'error';
+  extractedContent?: string; // Markdown/LaTeX content
+  errorMsg?: string;
 }
 
-export interface ExamConfig {
-  schoolName: string;
-  examName: string;
-  examTime: number; // Time in minutes
-  difficulty: 'Dễ' | 'Trung bình' | 'Khó';
-  // CV 7991 Structure
-  mcCount: number;        // Part 1 - Type 1
-  tfCount: number;        // Part 1 - Type 2
-  saCount: number;        // Part 1 - Type 3
-  
-  essayCount: number;     // Part 2 - Count
-  essayPoints: number;    // Part 2 - Points (New field)
-
-  matrixNotes: string;
+export interface AppConfig {
+  apiKey: string;
 }
 
-export interface GeneratedExam {
-  schoolName: string;
-  examName: string;
-  examTime?: number;
-  essayPoints?: number; // Added field for dynamic point rendering
-  questions: Question[];
-  rawText: string;
-  matrixHtml?: string;
-}
-
-export interface FileWithData {
-  file: File;
-  base64: string;
-  mimeType: string;
+export enum GeminiModel {
+  PRO = 'gemini-3-pro-preview',
+  FLASH = 'gemini-2.5-flash',
 }
