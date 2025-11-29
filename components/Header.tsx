@@ -13,7 +13,7 @@ const Header: React.FC = () => {
             </span>
           </div>
           <div>
-            <h1 className="text-lg md:text-xl font-bold leading-tight uppercase">ỨNG DỤNG RA ĐỀ KIỂM TRA THEO CÔNG VĂN 7991</h1>
+            <h1 className="text-lg md:text-xl font-bold leading-tight uppercase">ỨNG DỤNG RA ĐỀ KIỂM TRA - Ver 2.0</h1>
             <p className="text-xs text-blue-200 opacity-90">Tự động hoá - Chuẩn sư phạm</p>
           </div>
         </div>
