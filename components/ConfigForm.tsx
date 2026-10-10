@@ -5,9 +5,19 @@ interface ConfigFormProps {
   config: ExamConfig;
   onChange: (newConfig: ExamConfig) => void;
   disabled: boolean;
+  hasFiles?: boolean;
+  onReExtractFromFiles?: () => void;
+  docExtractedNotice?: string | null;
 }
 
-const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) => {
+const ConfigForm: React.FC<ConfigFormProps> = ({ 
+  config, 
+  onChange, 
+  disabled,
+  hasFiles = false,
+  onReExtractFromFiles,
+  docExtractedNotice
+}) => {
   
   const handleChange = (key: keyof ExamConfig, value: any) => {
     onChange({ ...config, [key]: value });
@@ -75,7 +85,9 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
 
   return (
     <div className="space-y-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-      <h3 className="text-lg font-bold text-primary border-b pb-2">Cấu hình Đề Thi (CV 7991)</h3>
+      <div className="border-b pb-2">
+        <h3 className="text-lg font-bold text-primary">Cấu hình Đề Thi (CV 7991)</h3>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Auto-extracted info */}
@@ -223,7 +235,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
                   {/* Subject Structure Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                      <div className="flex flex-col">
-                        <label className="text-gray-500 mb-1 font-medium">TN Nhiều LC (Câu)</label>
+                        <label className="text-gray-600 mb-1 font-semibold" title="Nhiều lựa chọn">NLC (Câu)</label>
                         <input
                           type="number"
                           min="0"
@@ -234,7 +246,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
                         />
                      </div>
                      <div className="flex flex-col">
-                        <label className="text-gray-500 mb-1 font-medium">TN Đúng/Sai (Câu)</label>
+                        <label className="text-gray-600 mb-1 font-semibold" title="Đúng sai">Đ/S (Câu)</label>
                         <input
                           type="number"
                           min="0"
@@ -245,7 +257,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
                         />
                      </div>
                      <div className="flex flex-col">
-                        <label className="text-gray-500 mb-1 font-medium">TN Trả lời ngắn (Câu)</label>
+                        <label className="text-gray-600 mb-1 font-semibold" title="Trả lời ngắn">TLN (Câu)</label>
                         <input
                           type="number"
                           min="0"
@@ -256,7 +268,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
                         />
                      </div>
                      <div className="flex flex-col">
-                        <label className="text-gray-500 mb-1 font-medium">Tự luận (Câu)</label>
+                        <label className="text-gray-600 mb-1 font-semibold" title="Tự luận">TL (Câu)</label>
                         <input
                           type="number"
                           min="0"
@@ -326,13 +338,37 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
         {/* SINGLE SUBJECT INPUTS - HIDDEN IN INTEGRATED MODE */}
         {!isIntegrated && (
         <>
-            <div className="md:col-span-2 border-t pt-2 mt-2">
-               <p className="text-sm font-bold text-blue-700 uppercase mb-1">Cấu hình Đơn môn</p>
+            <div className="md:col-span-2 border-t pt-3 mt-2">
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                  <div>
+                    <p className="text-sm font-bold text-blue-700 uppercase">Cấu hình Đơn môn</p>
+                    <p className="text-xs text-gray-500">Đọc tự động từ yêu cầu của tài liệu (NLC, Đ/S, TLN, TL)</p>
+                  </div>
+                  {hasFiles && onReExtractFromFiles && (
+                    <button
+                      type="button"
+                      onClick={onReExtractFromFiles}
+                      disabled={disabled}
+                      className="px-2.5 py-1 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md border border-blue-200 font-semibold flex items-center gap-1 transition-colors self-start sm:self-auto cursor-pointer"
+                      title="Quét lại yêu cầu số câu từ tài liệu đã tải"
+                    >
+                      <span>🔄</span>
+                      <span>Đọc lại từ tài liệu</span>
+                    </button>
+                  )}
+               </div>
+
+               {docExtractedNotice && (
+                 <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900 text-xs mb-3 flex items-start gap-2 animate-in fade-in">
+                   <span className="text-emerald-600 font-bold">✓</span>
+                   <span className="font-medium">{docExtractedNotice}</span>
+                 </div>
+               )}
             </div>
 
             <div>
                 <label className="block text-sm font-medium text-gray-700" title="Chọn 1 trong 4 đáp án">
-                    Dạng 1: TN Nhiều lựa chọn
+                    Dạng 1: TN Nhiều lựa chọn (NLC)
                 </label>
                 <input 
                     type="number" 
@@ -340,13 +376,13 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
                     max="100" 
                     value={config.mcCount}
                     onChange={(e) => handleChange('mcCount', parseInt(e.target.value) || 0)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm font-semibold"
                     disabled={disabled}
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700" title="4 ý Đúng/Sai trong 1 câu">
-                    Dạng 2: TN Đúng/Sai
+                <label className="block text-sm font-medium text-gray-700" title="4 ý Đúng/Sai trong 1 câu">
+                    Dạng 2: TN Đúng / Sai (Đ/S)
                 </label>
                 <input 
                     type="number" 
@@ -354,13 +390,13 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
                     max="50" 
                     value={config.tfCount}
                     onChange={(e) => handleChange('tfCount', parseInt(e.target.value) || 0)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm font-semibold"
                     disabled={disabled}
                 />
             </div>
              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700" title="Điền đáp số">
-                    Dạng 3: TN Trả lời ngắn
+                <label className="block text-sm font-medium text-gray-700" title="Học sinh tự điền đáp số">
+                    Dạng 3: TN Trả lời ngắn (TLN)
                 </label>
                 <input 
                     type="number" 
@@ -368,14 +404,14 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
                     max="50" 
                     value={config.saCount}
                     onChange={(e) => handleChange('saCount', parseInt(e.target.value) || 0)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm font-semibold"
                     disabled={disabled}
                 />
             </div>
 
             <div>
                 <label className="block text-sm font-medium text-gray-700">
-                    Số lượng câu Tự luận
+                    Số lượng câu Tự luận (TL)
                 </label>
                 <input 
                     type="number" 
@@ -383,13 +419,13 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
                     max="20" 
                     value={config.essayCount}
                     onChange={(e) => handleChange('essayCount', parseInt(e.target.value) || 0)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm font-semibold"
                     disabled={disabled}
                 />
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-700">
-                    Điểm Tự luận (0 - 10)
+                    Điểm Tự luận (TL: 0 - 10)
                 </label>
                 <input 
                     type="number" 
@@ -420,6 +456,30 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onChange, disabled }) =
           onChange={(e) => handleChange('matrixNotes', e.target.value)}
           className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
           placeholder="Nhập yêu cầu đặc tả ma trận, phân bổ kiến thức chi tiết..."
+          disabled={disabled}
+        ></textarea>
+      </div>
+
+      {/* Excluded Content / Knowledge box */}
+      <div className="mt-4 bg-rose-50/70 p-3.5 rounded-lg border border-rose-200 shadow-sm">
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-sm font-bold text-rose-900 flex items-center gap-2">
+            <span className="text-base">🚫</span>
+            <span>Kiến thức loại trừ</span>
+          </label>
+          <span className="text-[11px] font-semibold text-rose-700 bg-rose-100/80 px-2 py-0.5 rounded border border-rose-200">
+            Không đưa vào đề
+          </span>
+        </div>
+        <p className="text-xs text-rose-800/90 mb-2 leading-relaxed">
+          Nhập các dạng bài toán, phần kiến thức mà SGK, tài liệu, đề cương không cho hoặc chưa học để ứng dụng không đưa các dạng toán đó vào đề kiểm tra.
+        </p>
+        <textarea
+          rows={3}
+          value={config.excludedTopics || ''}
+          onChange={(e) => handleChange('excludedTopics', e.target.value)}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-rose-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500 sm:text-sm text-gray-800 placeholder-gray-400"
+          placeholder="Nhập các dạng bài toán, chuyên đề kiến thức cần loại trừ không đưa vào đề kiểm tra..."
           disabled={disabled}
         ></textarea>
       </div>

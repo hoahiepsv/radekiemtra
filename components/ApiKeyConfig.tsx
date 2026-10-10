@@ -4,69 +4,133 @@ import { ICONS } from '../constants';
 interface ApiKeyConfigProps {
   apiKey: string;
   onApiKeyChange: (key: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({ apiKey, onApiKeyChange }) => {
+const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({ 
+  apiKey, 
+  onApiKeyChange,
+  isOpen = false,
+  onClose 
+}) => {
   const [inputKey, setInputKey] = useState(apiKey);
-  const [showInput, setShowInput] = useState(false);
+  const [savedMessage, setSavedMessage] = useState(false);
 
   useEffect(() => {
     setInputKey(apiKey);
   }, [apiKey]);
 
   const handleSave = () => {
-    onApiKeyChange(inputKey);
-    localStorage.setItem('gemini_api_key', inputKey);
-    alert('Đã lưu API Key thành công!');
+    onApiKeyChange(inputKey.trim());
+    if (inputKey.trim()) {
+      localStorage.setItem('gemini_api_key', inputKey.trim());
+    } else {
+      localStorage.removeItem('gemini_api_key');
+    }
+    setSavedMessage(true);
+    setTimeout(() => {
+      setSavedMessage(false);
+      if (onClose) onClose();
+    }, 1200);
   };
 
+  const handleClear = () => {
+    setInputKey('');
+    onApiKeyChange('');
+    localStorage.removeItem('gemini_api_key');
+    setSavedMessage(true);
+    setTimeout(() => {
+      setSavedMessage(false);
+      if (onClose) onClose();
+    }, 1000);
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-blue-200 mb-6">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-sm font-bold text-primary flex items-center">
-          {ICONS.Settings}
-          <span className="ml-2">Cấu hình API Key</span>
-        </h3>
-        <button 
-          onClick={() => setShowInput(!showInput)}
-          className="text-xs text-blue-500 hover:text-blue-700 underline"
-        >
-          {showInput ? 'Ẩn' : 'Chỉnh sửa'}
-        </button>
-      </div>
-      
-      {(showInput || !apiKey) && (
-        <div className="space-y-2">
-          <p className="text-xs text-gray-500">
-            Nhập Google API Key để sử dụng (Lưu trên trình duyệt của bạn).
-          </p>
-          <div className="flex space-x-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-xl shadow-2xl border border-gray-100 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex justify-between items-center mb-4 border-b pb-3">
+          <div className="flex items-center space-x-2 text-primary font-bold text-base">
+            {ICONS.Settings}
+            <span>Cài đặt Gemini API (Tuỳ chọn)</span>
+          </div>
+          {onClose && (
+            <button 
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-4 text-sm">
+          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-start gap-2">
+            <span className="text-emerald-500 font-bold mt-0.5">✓</span>
+            <div>
+              <p className="font-semibold">Ứng dụng hoạt động đầy đủ không cần API key!</p>
+              <p className="text-emerald-700 mt-0.5">Hệ thống đã tích hợp sẵn bộ sinh ma trận và câu hỏi chuẩn Công văn 7991.</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              Google Gemini API Key (Không bắt buộc)
+            </label>
             <input
               type="password"
               value={inputKey}
               onChange={(e) => setInputKey(e.target.value)}
-              placeholder="Nhập API Key (AIza...)"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Để trống để dùng chế độ tự động..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button
-              onClick={handleSave}
-              className="px-3 py-2 bg-primary text-white text-sm rounded-md hover:bg-blue-800 transition-colors"
-            >
-              Lưu
-            </button>
+            <p className="text-[11px] text-gray-500 mt-1">
+              Nếu bạn có Google API Key riêng, bạn có thể dán vào đây để mở rộng khả năng phân tích nâng cao.
+            </p>
           </div>
-          <div className="text-[10px] text-gray-400 italic">
-            * Ứng dụng hoạt động tốt nhất với model gemini-2.5-flash
+
+          {savedMessage && (
+            <div className="p-2 bg-green-100 text-green-800 text-xs rounded font-medium text-center">
+              ✓ Đã lưu cấu hình thành công!
+            </div>
+          )}
+
+          <div className="flex justify-between items-center pt-2">
+            {apiKey ? (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="text-xs text-red-600 hover:text-red-800 underline font-medium"
+              >
+                Xoá API Key (Dùng mặc định)
+              </button>
+            ) : <div />}
+
+            <div className="flex space-x-2">
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Đóng
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleSave}
+                className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-blue-800 shadow-sm"
+              >
+                Lưu cấu hình
+              </button>
+            </div>
           </div>
         </div>
-      )}
-      
-      {apiKey && !showInput && (
-         <div className="flex items-center text-xs text-green-600 font-medium">
-            <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-            Đã cấu hình API Key
-         </div>
-      )}
+      </div>
     </div>
   );
 };

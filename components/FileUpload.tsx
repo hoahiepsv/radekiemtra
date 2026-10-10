@@ -15,12 +15,13 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesSelected, isProcessing }
       
       for (let i = 0; i < event.target.files.length; i++) {
         const file = event.target.files[i];
-        if (file.type === 'application/pdf') {
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (isPdf) {
           const base64 = await convertToBase64(file);
           newFiles.push({
             file,
             base64,
-            mimeType: file.type
+            mimeType: file.type || 'application/pdf'
           });
         }
       }
