@@ -24,6 +24,7 @@ export interface Question {
   subQuestions?: SubQuestion[];
   // For Type 3 & Essay
   solution?: string; 
+  score?: number; // Thang điểm câu hỏi căn cứ ma trận/tài liệu (VD: 0.25đ, 1đ,...)
 }
 
 export interface SubjectConfig {
@@ -57,6 +58,7 @@ export interface ExamConfig {
   essayPoints: number;    // Part 2 - Points
 
   matrixNotes: string;
+  excludedTopics?: string; // Dạng bài toán / kiến thức loại trừ không đưa vào đề
 }
 
 export interface GeneratedExam {
@@ -73,4 +75,21 @@ export interface FileWithData {
   file: File;
   base64: string;
   mimeType: string;
+}
+
+export interface AnalyzedDocumentInfo {
+  schoolName?: string;
+  examName?: string;
+  detectedSubjects?: string[];
+  subjectType?: 'single' | 'integrated';
+  examTime?: number;
+  difficulty?: 'Dễ' | 'Trung bình' | 'Khó';
+  mcCount?: number;      // NLC: Nhiều lựa chọn
+  tfCount?: number;      // Đ/S: Đúng sai
+  saCount?: number;      // TLN: Trả lời ngắn
+  essayCount?: number;   // TL: Tự luận
+  essayPoints?: number;  // Điểm tự luận
+  matrixNotes?: string;  // Ghi chú ma trận / phạm vi kiến thức
+  excludedTopics?: string; // Kiến thức / dạng bài loại trừ phát hiện được
+  summary?: string;      // Tóm tắt cấu trúc phát hiện được
 }

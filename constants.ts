@@ -17,7 +17,8 @@ export const DEFAULT_CONFIG: ExamConfig = {
   saCount: 6,    // Default usually 6
   essayCount: 2, // Essay count
   essayPoints: 3.0, // Default Essay Points (30%)
-  matrixNotes: 'Tỷ lệ nhận biết 40%, thông hiểu 30%, vận dụng 30%. Công thức toán in ấn chuẩn.'
+  matrixNotes: 'Tỷ lệ nhận biết 40%, thông hiểu 30%, vận dụng 30%. Công thức toán in ấn chuẩn.',
+  excludedTopics: ''
 };
 
 export const AUTHOR_INFO = "Lê Hoà Hiệp (0983.676.470)";
